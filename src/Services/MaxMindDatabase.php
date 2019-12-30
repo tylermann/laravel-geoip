@@ -81,11 +81,24 @@ class MaxMindDatabase extends AbstractService
         $tmpFile = tempnam(sys_get_temp_dir(), 'maxmind');
         file_put_contents($tmpFile, fopen($url, 'r'));
 
+        // check if we need to extract a tarfile
+        $tmpFile2 = null;
+        $tarFile = $this->config('tar_file', null);
+        if ($tarFile !== null) {
+            $phar = new PharData($tempFile);
+            $tmpFile2 = tempnam(sys_get_temp_dir(), 'maxmind-2');
+            $phar->extractTo($tempFile2, $tarFile, true);
+        }
+
         // Unzip and save database
         file_put_contents($path, gzopen($tmpFile, 'r'));
 
-        // Remove temp file
+        // Remove temp files
         @unlink($tmpFile);
+
+        if ($tempFile2) {
+            @unlink($tmpFile2);
+        }
 
         return "Database file ({$path}) updated.";
     }
